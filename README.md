@@ -1,4 +1,4 @@
-# Sparse IMUs Based Kinetics Estimation Using Multi-modal Fusion and Sensor Distillation
+# Lightweight and Efficient Kinetics Estimation with Sparse IMUs via Multi-Modal Sensor Distillation
 
 ## Overview
 This paper introduces **Kinetics-MFFM-Net**, a lightweight model designed to estimate gait kinetic parameters (such as joint moments and ground reaction forces) using sparse inertial measurement unit (IMU) sensors. The model aims to overcome the limitations of traditional optical motion capture systems and full-body IMU sensor setups, which can be expensive, cumbersome, and impractical for daily use.
