@@ -68,9 +68,6 @@ Input modalities include IMU, EMG, and optionally video-based features.
 
 ## 🧪 Running the Models
 
-You can run each script as a standalone training/evaluation module:
-```bash
-python ffn_hf_ffn_bilstm_convnet.py
-python lmfn_tfn_fusion_models.py
-python kinetics_fm_models.py
+You can run each script by adjusting the location of the input and output files.
+
 
