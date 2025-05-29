@@ -412,52 +412,6 @@ test_features_2D_point=test_features[:,:,48:92]
 val_features_2D_point=val_features[:,:,48:92]
 
 
-# train_features_8_IMU=train_features[:,:,0:48]
-# test_features_8_IMU=test_features[:,:,0:48]
-# val_features_8_IMU=val_features[:,:,0:48]
-
-# ### Foot-Shank-Thigh
-
-# train_features_3_IMU=train_features[:,:,12:30]
-# test_features_3_IMU=test_features[:,:,12:30]
-# val_features_3_IMU=val_features[:,:,12:30]
-
-# ### Foot-Shank
-
-# train_features_2_IMU_1=train_features[:,:,12:24]
-# test_features_2_IMU_1=test_features[:,:,12:24]
-# val_features_2_IMU_1=val_features[:,:,12:24]
-
-# ### Shank-Thigh
-# train_features_2_IMU_2=train_features[:,:,18:30]
-# test_features_2_IMU_2=test_features[:,:,18:30]
-# val_features_2_IMU_2=val_features[:,:,18:30]
-
-# ### Foot-Thigh
-# train_features_2_IMU_3=torch.cat((train_features[:,:,12:18],train_features[:,:,24:30]),axis=-1)
-# test_features_2_IMU_3=torch.cat((test_features[:,:,12:18],test_features[:,:,24:30]),axis=-1)
-# val_features_2_IMU_3=torch.cat((val_features[:,:,12:18],val_features[:,:,24:30]),axis=-1)
-
-# ### Foot
-# train_features_1_IMU_1=train_features[:,:,12:18]
-# test_features_1_IMU_1=test_features[:,:,12:18]
-# val_features_1_IMU_1=val_features[:,:,12:18]
-
-# ### Shank
-
-# train_features_1_IMU_2=train_features[:,:,18:24]
-# test_features_1_IMU_2=test_features[:,:,18:24]
-# val_features_1_IMU_2=val_features[:,:,18:24]
-
-# ### Thigh
-# train_features_1_IMU_3=train_features[:,:,24:30]
-# test_features_1_IMU_3=test_features[:,:,24:30]
-# val_features_1_IMU_3=val_features[:,:,24:30]
-
-
-
-
-
 
 
 train = TensorDataset(train_features, train_features_acc_8,train_features_gyr_8, train_features_2D_point, train_targets)
@@ -467,6 +421,8 @@ test = TensorDataset(test_features, test_features_acc_8, test_features_gyr_8, te
 train_loader = DataLoader(train, batch_size=batch_size, shuffle=True, drop_last=False)
 val_loader = DataLoader(val, batch_size=batch_size, shuffle=True, drop_last=False)
 test_loader = DataLoader(test, batch_size=batch_size, shuffle=True, drop_last=False)
+
+
 
 """# Important Functions"""
 
@@ -478,18 +434,11 @@ def RMSE_prediction(yhat_4,test_y,s):
   yhat=yhat_4.reshape((s1,5))
 
 
-
-
   y_1_no=yhat[:,0]
   y_2_no=yhat[:,1]
   y_3_no=yhat[:,2]
   y_4_no=yhat[:,3]
   y_5_no=yhat[:,4]
-  # y_6_no=yhat[:,5]
-  # y_7_no=yhat[:,6]
-  #y_8_no=yhat[:,7]
-  #y_9_no=yhat[:,8]
-  #y_10_no=yhat[:,9]
 
 
   y_1=y_1_no
@@ -499,25 +448,11 @@ def RMSE_prediction(yhat_4,test_y,s):
   y_5=y_5_no
 
 
-
   y_test_1=test_o[:,0]
   y_test_2=test_o[:,1]
   y_test_3=test_o[:,2]
   y_test_4=test_o[:,3]
   y_test_5=test_o[:,4]
-  # y_test_6=test_o[:,5]
-  # y_test_7=test_o[:,6]
-  #y_test_8=test_o[:,7]
-  #y_test_9=test_o[:,8]
-  #y_test_10=test_o[:,9]
-
-
-
-
-
-  #print(y_1.shape,y_test_1.shape)
-
-
 
 
   Z_1=y_1
@@ -525,11 +460,7 @@ def RMSE_prediction(yhat_4,test_y,s):
   Z_3=y_3
   Z_4=y_4
   Z_5=y_5
-  # Z_6=y_6
-  # Z_7=y_7
-  #Z_8=y_8
-  #Z_9=y_9
-  #Z_10=y_10
+
 
 
 
@@ -540,11 +471,7 @@ def RMSE_prediction(yhat_4,test_y,s):
   rmse_3 =((np.sqrt(mean_squared_error(y_test_3,y_3)))/(max(y_test_3)-min(y_test_3)))*100
   rmse_4 =((np.sqrt(mean_squared_error(y_test_4,y_4)))/(max(y_test_4)-min(y_test_4)))*100
   rmse_5 =((np.sqrt(mean_squared_error(y_test_5,y_5)))/(max(y_test_5)-min(y_test_5)))*100
-  # rmse_6 =((np.sqrt(mean_squared_error(y_test_6,y_6)))/(max(y_test_6)-min(y_test_6)))*100
-  # rmse_7 =((np.sqrt(mean_squared_error(y_test_7,y_7)))/(max(y_test_7)-min(y_test_7)))*100
-  #rmse_8 =((np.sqrt(mean_squared_error(y_test_8,y_8)))/(max(y_test_8)-min(y_test_8)))*100
-  #rmse_9 =((np.sqrt(mean_squared_error(y_test_9,y_9)))/(max(y_test_9)-min(y_test_9)))*100
-  #rmse_10 =((np.sqrt(mean_squared_error(y_test_10,y_10)))/(max(y_test_10)-min(y_test_10)))*100
+
 
 
   print(rmse_1)
@@ -552,11 +479,6 @@ def RMSE_prediction(yhat_4,test_y,s):
   print(rmse_3)
   print(rmse_4)
   print(rmse_5)
-  # print(rmse_6)
-  # print(rmse_7)
-  #print(rmse_8)
-  #print(rmse_9)
-  #print(rmse_10)
 
 
   p_1=np.corrcoef(y_1, y_test_1)[0, 1]
@@ -564,11 +486,7 @@ def RMSE_prediction(yhat_4,test_y,s):
   p_3=np.corrcoef(y_3, y_test_3)[0, 1]
   p_4=np.corrcoef(y_4, y_test_4)[0, 1]
   p_5=np.corrcoef(y_5, y_test_5)[0, 1]
-  # p_6=np.corrcoef(y_6, y_test_6)[0, 1]
-  # p_7=np.corrcoef(y_7, y_test_7)[0, 1]
-  #p_8=np.corrcoef(y_8, y_test_8)[0, 1]
-  #p_9=np.corrcoef(y_9, y_test_9)[0, 1]
-  #p_10=np.corrcoef(y_10, y_test_10)[0, 1]
+
 
 
   print("\n")
@@ -577,170 +495,6 @@ def RMSE_prediction(yhat_4,test_y,s):
   print(p_3)
   print(p_4)
   print(p_5)
-  # print(p_6)
-  # print(p_7)
-  #print(p_8)
-  #print(p_9)
-  #print(p_10)
-
-
-              ### Correlation ###
-  p=np.array([p_1,p_2,p_3,p_4,p_5])
-
-
-
-
-      #### Mean and standard deviation ####
-
-  rmse=np.array([rmse_1,rmse_2,rmse_3,rmse_4,rmse_5])
-
-      #### Mean and standard deviation ####
-  m=statistics.mean(rmse)
-  SD=statistics.stdev(rmse)
-  print('Mean: %.3f' % m,'+/- %.3f' %SD)
-
-  m_c=statistics.mean(p)
-  SD_c=statistics.stdev(p)
-  print('Mean: %.3f' % m_c,'+/- %.3f' %SD_c)
-
-
-
-  return rmse, p, Z_1,Z_2,Z_3,Z_4,Z_5
-
-
-############################################################################################################################################################################################################################################################################################################################################################################################################################################################################
-def RMSE_prediction_WN(yhat_4,test_y,s):
-
-  test_o=test_y.reshape((s,5))
-  yhat=yhat_4.reshape((s,5))
-
-
-
-
-  y_1_no=yhat[:,0]
-  y_2_no=yhat[:,1]
-  y_3_no=yhat[:,2]
-  y_4_no=yhat[:,3]
-  y_5_no=yhat[:,4]
-  # y_6_no=yhat[:,5]
-  # y_7_no=yhat[:,6]
-  #y_8_no=yhat[:,7]
-  #y_9_no=yhat[:,8]
-  #y_10_no=yhat[:,9]
-
-
-
-
-  y_test_1=test_o[:,0]
-  y_test_2=test_o[:,1]
-  y_test_3=test_o[:,2]
-  y_test_4=test_o[:,3]
-  y_test_5=test_o[:,4]
-  # y_test_6=test_o[:,5]
-  # y_test_7=test_o[:,6]
-  #y_test_8=test_o[:,7]
-  #y_test_9=test_o[:,8]
-  #y_test_10=test_o[:,9]
-
-
-
-
-
-  #print(y_1.shape,y_test_1.shape)
-
-
-
-  cutoff=6
-  fs=200
-  order=4
-
-  nyq = 0.5 * fs
-  ## filtering data ##
-  def butter_lowpass_filter(data, cutoff, fs, order):
-      normal_cutoff = cutoff / nyq
-      # Get the filter coefficients
-      b, a = butter(order, normal_cutoff, btype='low', analog=False)
-      y = filtfilt(b, a, data)
-      return y
-
-
-
-  y_1=butter_lowpass_filter(y_1_no, cutoff, fs, order)
-  y_2=butter_lowpass_filter(y_2_no, cutoff, fs, order)
-  y_3=butter_lowpass_filter(y_3_no, cutoff, fs, order)
-  y_4=butter_lowpass_filter(y_4_no, cutoff, fs, order)
-  y_5=butter_lowpass_filter(y_5_no, cutoff, fs, order)
-  # y_6=butter_lowpass_filter(y_6_no, cutoff, fs, order)
-  # y_7=butter_lowpass_filter(y_7_no, cutoff, fs, order)
-  #y_8=butter_lowpass_filter(y_8_no, cutoff, fs, order)
-  #y_9=butter_lowpass_filter(y_9_no, cutoff, fs, order)
-  #y_10=butter_lowpass_filter(y_10_no, cutoff, fs, order)
-
-
-
-
-  Z_1=y_1
-  Z_2=y_2
-  Z_3=y_3
-  Z_4=y_4
-  Z_5=y_5
-  # Z_6=y_6
-  # Z_7=y_7
-  #Z_8=y_8
-  #Z_9=y_9
-  #Z_10=y_10
-
-
-
-  ###calculate RMSE
-
-  rmse_1 =np.sqrt(mean_squared_error(y_test_1,y_1))
-  rmse_2 =np.sqrt(mean_squared_error(y_test_2,y_2))
-  rmse_3 =np.sqrt(mean_squared_error(y_test_3,y_3))
-  rmse_4 =np.sqrt(mean_squared_error(y_test_4,y_4))
-  rmse_5 =np.sqrt(mean_squared_error(y_test_5,y_5))
-  # rmse_6 =((np.sqrt(mean_squared_error(y_test_6,y_6)))/(max(y_test_6)-min(y_test_6)))*100
-  # rmse_7 =((np.sqrt(mean_squared_error(y_test_7,y_7)))/(max(y_test_7)-min(y_test_7)))*100
-  #rmse_8 =((np.sqrt(mean_squared_error(y_test_8,y_8)))/(max(y_test_8)-min(y_test_8)))*100
-  #rmse_9 =((np.sqrt(mean_squared_error(y_test_9,y_9)))/(max(y_test_9)-min(y_test_9)))*100
-  #rmse_10 =((np.sqrt(mean_squared_error(y_test_10,y_10)))/(max(y_test_10)-min(y_test_10)))*100
-
-
-  print(rmse_1)
-  print(rmse_2)
-  print(rmse_3)
-  print(rmse_4)
-  print(rmse_5)
-  # print(rmse_6)
-  # print(rmse_7)
-  #print(rmse_8)
-  #print(rmse_9)
-  #print(rmse_10)
-
-
-  p_1=np.corrcoef(y_1, y_test_1)[0, 1]
-  p_2=np.corrcoef(y_2, y_test_2)[0, 1]
-  p_3=np.corrcoef(y_3, y_test_3)[0, 1]
-  p_4=np.corrcoef(y_4, y_test_4)[0, 1]
-  p_5=np.corrcoef(y_5, y_test_5)[0, 1]
-  # p_6=np.corrcoef(y_6, y_test_6)[0, 1]
-  # p_7=np.corrcoef(y_7, y_test_7)[0, 1]
-  #p_8=np.corrcoef(y_8, y_test_8)[0, 1]
-  #p_9=np.corrcoef(y_9, y_test_9)[0, 1]
-  #p_10=np.corrcoef(y_10, y_test_10)[0, 1]
-
-
-  print("\n")
-  print(p_1)
-  print(p_2)
-  print(p_3)
-  print(p_4)
-  print(p_5)
-  # print(p_6)
-  # print(p_7)
-  #print(p_8)
-  #print(p_9)
-  #print(p_10)
 
 
               ### Correlation ###
@@ -782,8 +536,6 @@ def PCC_prediction(yhat_4,test_y,s):
   y_3_no=yhat[:,2]
   y_4_no=yhat[:,3]
   y_5_no=yhat[:,4]
-  # y_6_no=yhat[:,5]
-  # y_7_no=yhat[:,6]
 
 
   y_test_1=test_o[:,0]
@@ -791,33 +543,6 @@ def PCC_prediction(yhat_4,test_y,s):
   y_test_3=test_o[:,2]
   y_test_4=test_o[:,3]
   y_test_5=test_o[:,4]
-  # y_test_6=test_o[:,5]
-  # y_test_7=test_o[:,6]
-
-
-
-  cutoff=6
-  fs=200
-  order=4
-
-  nyq = 0.5 * fs
-  ## filtering data ##
-  def butter_lowpass_filter(data, cutoff, fs, order):
-      normal_cutoff = cutoff / nyq
-      # Get the filter coefficients
-      b, a = butter(order, normal_cutoff, btype='low', analog=False)
-      y = filtfilt(b, a, data)
-      return y
-
-
-
-  y_1=butter_lowpass_filter(y_1_no, cutoff, fs, order)
-  y_2=butter_lowpass_filter(y_2_no, cutoff, fs, order)
-  y_3=butter_lowpass_filter(y_3_no, cutoff, fs, order)
-  y_4=butter_lowpass_filter(y_4_no, cutoff, fs, order)
-  y_5=butter_lowpass_filter(y_5_no, cutoff, fs, order)
-  # y_6=butter_lowpass_filter(y_6_no, cutoff, fs, order)
-  # y_7=butter_lowpass_filter(y_7_no, cutoff, fs, order)
 
 
   Y_1=y_1
@@ -825,8 +550,6 @@ def PCC_prediction(yhat_4,test_y,s):
   Y_3=y_3
   Y_4=y_4
   Y_5=y_5
-  # Y_6=y_6
-  # Y_7=y_7
 
 
   ###calculate RMSE
@@ -836,8 +559,7 @@ def PCC_prediction(yhat_4,test_y,s):
   rmse_3 =((np.sqrt(mean_squared_error(y_test_3,y_3)))/(max(y_test_3)-min(y_test_3)))*100
   rmse_4 =((np.sqrt(mean_squared_error(y_test_4,y_4)))/(max(y_test_4)-min(y_test_4)))*100
   rmse_5 =((np.sqrt(mean_squared_error(y_test_5,y_5)))/(max(y_test_5)-min(y_test_5)))*100
-  # rmse_6 =((np.sqrt(mean_squared_error(y_test_6,y_6)))/(max(y_test_6)-min(y_test_6)))*100
-  # rmse_7 =((np.sqrt(mean_squared_error(y_test_7,y_7)))/(max(y_test_7)-min(y_test_7)))*100
+
 
 
   print(rmse_1)
@@ -845,8 +567,6 @@ def PCC_prediction(yhat_4,test_y,s):
   print(rmse_3)
   print(rmse_4)
   print(rmse_5)
-  # print(rmse_6)
-  # print(rmse_7)
 
 
   p_1=np.corrcoef(y_1, y_test_1)[0, 1]
@@ -854,8 +574,6 @@ def PCC_prediction(yhat_4,test_y,s):
   p_3=np.corrcoef(y_3, y_test_3)[0, 1]
   p_4=np.corrcoef(y_4, y_test_4)[0, 1]
   p_5=np.corrcoef(y_5, y_test_5)[0, 1]
-  # p_6=np.corrcoef(y_6, y_test_6)[0, 1]
-  # p_7=np.corrcoef(y_7, y_test_7)[0, 1]
 
 
   print("\n")
@@ -864,8 +582,6 @@ def PCC_prediction(yhat_4,test_y,s):
   print(p_3)
   print(p_4)
   print(p_5)
-  # print(p_6)
-  # print(p_7)
 
 
 
@@ -926,20 +642,18 @@ def DLR_prediction(yhat_4,test_y,s,Y_1,Y_2,Y_3,Y_4,Y_5,Z_1,Z_2,Z_3,Z_4,Z_5):
   a_4,b_4=estimate_coef(Y_4,Z_4)
   a_5,b_5=estimate_coef(Y_5,Z_5)
 
-  #### All 16 angles prediction  ####
+  #### All 5 joints prediction  ####
 
 
   test_o=test_y.reshape((s,5))
   yhat=yhat_4.reshape((s,5))
 
 
-  y_1_no=yhat[:,0]
-  y_2_no=yhat[:,1]
-  y_3_no=yhat[:,2]
-  y_4_no=yhat[:,3]
-  y_5_no=yhat[:,4]
-  # y_6_no=yhat[:,5]
-  # y_7_no=yhat[:,6]
+  y_1=yhat[:,0]
+  y_2=yhat[:,1]
+  y_3=yhat[:,2]
+  y_4=yhat[:,3]
+  y_5=yhat[:,4]
 
 
 
@@ -948,32 +662,6 @@ def DLR_prediction(yhat_4,test_y,s,Y_1,Y_2,Y_3,Y_4,Y_5,Z_1,Z_2,Z_3,Z_4,Z_5):
   y_test_3=test_o[:,2]
   y_test_4=test_o[:,3]
   y_test_5=test_o[:,4]
-  # y_test_6=test_o[:,5]
-  # y_test_7=test_o[:,6]
-
-
-  cutoff=6
-  fs=200
-  order=4
-
-  nyq = 0.5 * fs
-  ## filtering data ##
-  def butter_lowpass_filter(data, cutoff, fs, order):
-      normal_cutoff = cutoff / nyq
-      # Get the filter coefficients
-      b, a = butter(order, normal_cutoff, btype='low', analog=False)
-      y = filtfilt(b, a, data)
-      return y
-
-
-
-  y_1=butter_lowpass_filter(y_1_no, cutoff, fs, order)
-  y_2=butter_lowpass_filter(y_2_no, cutoff, fs, order)
-  y_3=butter_lowpass_filter(y_3_no, cutoff, fs, order)
-  y_4=butter_lowpass_filter(y_4_no, cutoff, fs, order)
-  y_5=butter_lowpass_filter(y_5_no, cutoff, fs, order)
-  # y_6=butter_lowpass_filter(y_6_no, cutoff, fs, order)
-  # y_7=butter_lowpass_filter(y_7_no, cutoff, fs, order)
 
 
 
@@ -993,9 +681,6 @@ def DLR_prediction(yhat_4,test_y,s,Y_1,Y_2,Y_3,Y_4,Y_5,Z_1,Z_2,Z_3,Z_4,Z_5):
   rmse_3 =((np.sqrt(mean_squared_error(y_test_3,y_3)))/(max(y_test_3)-min(y_test_3)))*100
   rmse_4 =((np.sqrt(mean_squared_error(y_test_4,y_4)))/(max(y_test_4)-min(y_test_4)))*100
   rmse_5 =((np.sqrt(mean_squared_error(y_test_5,y_5)))/(max(y_test_5)-min(y_test_5)))*100
-  # rmse_6 =((np.sqrt(mean_squared_error(y_test_6,y_6)))/(max(y_test_6)-min(y_test_6)))*100
-  # rmse_7 =((np.sqrt(mean_squared_error(y_test_7,y_7)))/(max(y_test_7)-min(y_test_7)))*100
-
 
 
 
@@ -1005,8 +690,7 @@ def DLR_prediction(yhat_4,test_y,s,Y_1,Y_2,Y_3,Y_4,Y_5,Z_1,Z_2,Z_3,Z_4,Z_5):
   print(rmse_3)
   print(rmse_4)
   print(rmse_5)
-  # print(rmse_6)
-  # print(rmse_7)
+
 
 
 
@@ -1015,8 +699,7 @@ def DLR_prediction(yhat_4,test_y,s,Y_1,Y_2,Y_3,Y_4,Y_5,Z_1,Z_2,Z_3,Z_4,Z_5):
   p_3=np.corrcoef(y_3, y_test_3)[0, 1]
   p_4=np.corrcoef(y_4, y_test_4)[0, 1]
   p_5=np.corrcoef(y_5, y_test_5)[0, 1]
-  # p_6=np.corrcoef(y_6, y_test_6)[0, 1]
-  # p_7=np.corrcoef(y_7, y_test_7)[0, 1]
+
 
 
   print("\n")
@@ -1025,8 +708,7 @@ def DLR_prediction(yhat_4,test_y,s,Y_1,Y_2,Y_3,Y_4,Y_5,Z_1,Z_2,Z_3,Z_4,Z_5):
   print(p_3)
   print(p_4)
   print(p_5)
-  # print(p_6)
-  # print(p_7)
+
 
 
               ### Correlation ###
@@ -1051,9 +733,8 @@ def DLR_prediction(yhat_4,test_y,s,Y_1,Y_2,Y_3,Y_4,Y_5,Z_1,Z_2,Z_3,Z_4,Z_5):
 
 
 
-
-
 ############################################################################################################################################################################################################################################################################################################################################################################################################################################################################
+
 
 # torch.cuda.is_available() checks and returns a Boolean True if a GPU is available, else it'll return False
 is_cuda = torch.cuda.is_available()
