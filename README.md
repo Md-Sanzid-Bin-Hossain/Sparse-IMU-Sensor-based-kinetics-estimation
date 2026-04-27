@@ -1,532 +1,377 @@
-# Lightweight and Efficient Kinetics Estimation with Sparse IMUs via Multi-Modal Sensor Distillation
+# Sparse IMU Sensor-Based Kinetics Estimation
 
-> **Paper:** *Hossain, Hadley, Guo, Choi — IEEE Sensors Journal, 2024.*
-> **Code:** [github.com/Md-Sanzid-Bin-Hossain/Sparse-IMU-Sensor-based-kinetics-estimation](https://github.com/Md-Sanzid-Bin-Hossain/Sparse-IMU-Sensor-based-kinetics-estimation)
+## Overview
 
-This repository contains the PyTorch implementation of **Kinetics-MFFM-Net** and a **Sensor Distillation (SD)** framework for estimating joint moments and ground reaction forces (GRFs) from wearable sensors. The method achieves up to ~30% lower NRMSE than state-of-the-art models while using up to ~130× fewer parameters.
+This document summarizes the project behind the manuscript **"Towards Sparse IMU Sensor-Based Estimation of Walking Kinematics, Joint Moments, and Ground Reaction Forces in Multiple Locomotion Modes via Deep Learning"** and its associated GitHub repository:
 
----
+- Manuscript: [Final_manuscript.pdf](/Users/sanzid-research/Downloads/Final_manuscript.pdf)
+- GitHub: [Sparse-IMU-Sensor-based-kinetics-estimation](https://github.com/Md-Sanzid-Bin-Hossain/Sparse-IMU-Sensor-based-kinetics-estimation/tree/main)
 
-## 📑 Table of Contents
+It is written as a manuscript-aligned project brief that can be reused as:
 
-1. [TL;DR](#-tldr)
-2. [Why This Work Matters](#-why-this-work-matters)
-3. [Datasets](#-datasets)
-4. [Method Overview](#-method-overview)
-5. [Architecture Deep-Dive](#-architecture-deep-dive)
-6. [Sensor Distillation (SD)](#-sensor-distillation-sd)
-7. [Repository Structure](#-repository-structure)
-8. [Reproduction Guide](#-reproduction-guide)
-9. [Results Summary](#-results-summary)
-10. [Limitations & Future Work](#-limitations--future-work)
-11. [Citation](#-citation)
+- a repository overview
+- a study summary for collaborators
+- a starting point for a public-facing `README.md`
+- a project description for reproducibility and documentation
 
----
+## Executive Summary
 
-## ⚡ TL;DR
+The core goal of this work is to estimate lower-extremity gait biomechanics from a **small number of wearable IMU sensors** rather than relying on expensive laboratory systems or full-body sensor setups. The project targets three major outputs:
 
-- **Goal:** Estimate **joint moments** and **3D ground reaction forces** from a **sparse set of IMUs** (as few as 1–2), avoiding optical motion capture and force plates.
-- **Key Idea:** A *teacher* model is trained with a rich sensor set (full IMUs + EMG or smartphone video). A *student* model with sparse IMUs is trained to mimic both the teacher's **outputs** and its **internal feature representations**.
-- **Architecture:** **Kinetics-MFFM-Net** — per-modality Gated Dual-Encoder Networks (Bi-LSTM + Bi-GRU) → Multi-Modal Feature Fusion Module (MFFM) → FC head.
-- **Result:** With just **1 foot IMU** (Dataset A) or **2 foot IMUs + pelvis** (Dataset B), the student matches or beats much larger SOTA models — at **~130× fewer parameters** and **~7–10× lower inference latency**.
+- joint kinematics
+- joint moments
+- ground reaction forces (GRFs)
 
----
+The central hypothesis is that a carefully designed deep learning framework can recover clinically meaningful biomechanical variables from **sparse IMU configurations** while remaining accurate, lightweight, and practical for real-world deployment.
 
-## 🌍 Why This Work Matters
+The project addresses a major translational problem in gait analysis:
 
-Joint moments and GRFs are essential biomechanical quantities for:
+- optical motion capture and force plates are accurate but costly and lab-bound
+- large IMU arrays are more portable but still cumbersome
+- sparse IMU setups are practical but risk losing critical biomechanical information
 
-- **Clinical assessment** of gait disorders — Parkinson's, multiple sclerosis, knee osteoarthritis (~14M cases in the U.S. alone).
-- **Prosthetics & exoskeleton control** — these devices need fast, reliable kinetic feedback to assist or augment movement.
-- **Rehabilitation & remote monitoring** — out-of-lab biomechanical assessment is currently very difficult.
+To bridge that gap, this work combines:
 
-**The conventional pipeline is impractical for real-world use:**
+- sparse wearable sensing
+- deep learning for sequence-to-biomechanics mapping
+- multi-modal fusion
+- sensor distillation / knowledge transfer
 
-| Component | Cost | Limitation |
-|---|---|---|
-| Optical motion capture cameras | ~$70K | Lab-bound |
-| Force plates | ~$60K | Floor-embedded |
-| Reflective markers + analysis | ~$1K + days of expert labor | Slow, location-restricted |
+## Problem Statement
 
-**Wearable alternatives have their own problems:** musculoskeletal models need **15–17 IMUs** worn over the whole body; EMG suffers from skin impedance and motion artifacts; wearable force plates are heavy and disrupt natural gait.
+Traditional gait biomechanics estimation depends on laboratory-grade equipment such as:
 
-**Sparse IMUs are the practical answer**, but they lose information critical for accurate kinetics estimation. Existing deep-learning solutions either underperform (generic architectures) or are massive (~250M parameters, unsuitable for embedded deployment).
+- optical motion capture systems
+- instrumented treadmills or force plates
+- expert-driven inverse dynamics pipelines
 
-This work closes the gap: **a lightweight architecture + cross-sensor knowledge transfer**, validated on diverse locomotion modes (treadmill, level-ground, ramp, stair).
+These systems are difficult to deploy outside controlled research settings. For long-term monitoring, rehabilitation, daily-life assessment, or low-cost screening, they are often impractical.
 
----
+Wearable IMUs offer a more accessible alternative, but there is a tradeoff:
 
-## 📊 Datasets
+- more sensors generally improve estimation quality
+- fewer sensors improve comfort, usability, and deployment potential
 
-Two publicly available gait datasets, with deliberately different sensor modalities to test generalization.
+This project focuses on that tradeoff directly by asking:
 
-### Dataset A — Camargo et al. [45]
-- **Participants:** 20 (12 M, 8 F) — original 22, two excluded for data quality.
-- **Sensors:** 4 IMUs (thigh, shank, foot, torso) + 11 EMGs on major lower-limb muscles.
-- **Locomotion modes:** treadmill (variable speeds), level-ground (5 CW + 5 CCW loops × 3 speeds), ramps (6 inclinations), stairs (4 heights).
-- **Ground truth:** force plates (Bertec) + optical motion capture.
-- **Targets (7 outputs):** hip flexion moment, hip abduction moment, knee flexion moment, ankle moment, 3D GRFs (mediolateral, anteroposterior, vertical).
-- **Window:** ΔT = 100 samples (0.5 s @ 200 Hz).
+**Can sparse IMU sensor configurations still support accurate estimation of gait kinematics, joint moments, and GRFs across multiple locomotion modes?**
 
-### Dataset B — Tan et al. [35]
-- **Participants:** 17 (all male).
-- **Sensors:** 8 IMUs (trunk, pelvis, both thighs, both shanks, both feet) + 2 smartphone cameras → 2D joint centers via OpenPose (shoulder, hip, knee, ankle).
-- **Locomotion modes:** instrumented treadmill walking under varied conditions — 3 speeds × 3 foot progression angles × 3 step widths × 3 trunk sway angles.
-- **Targets (5 outputs):** KFM, KAM, 3D GRFs.
-- **Window:** ΔT = 50 samples (0.5 s @ 100 Hz).
+## Motivation
 
-### Pre-processing pipeline
+The project is motivated by several practical needs:
 
-| Step | Dataset A | Dataset B |
-|---|---|---|
-| IMU sampling | 200 Hz | 100 Hz |
-| GRF resampling | 1000 Hz → 200 Hz | 1000 Hz → 100 Hz |
-| EMG processing | band-pass 20–460 Hz → rectify → low-pass 6 Hz → resample to 200 Hz | N/A |
-| Video → joint centers | N/A | OpenPose (Body 25), resampled to match IMU |
-| Segmentation | per gait cycle (force-plate contacts) | continuous (treadmill); zero-padding removed |
-| Normalization | EMG / max activation; GRF / weight; moments / (height × weight) | same as A |
+- enabling gait monitoring outside the lab
+- reducing hardware cost and setup burden
+- improving usability for repeated or continuous measurements
+- supporting rehabilitation, mobility assessment, and clinical follow-up
+- building lightweight models suitable for near-real-time deployment
 
----
+From a machine learning perspective, this is also a strong representation-learning problem:
 
-## 🧠 Method Overview
+- the input is multivariate temporal sensor data
+- the outputs are continuous biomechanical trajectories
+- the model must preserve temporal structure and cross-joint relationships
+- the sparse-sensor constraint makes missing information recovery especially important
 
-The framework operates in **three phases**:
+## Main Research Direction
 
-```
-Phase 1: Train Teacher                Phase 2: Build Student            Phase 3: Sensor Distillation
-─────────────────────                  ──────────────────                ──────────────────────────
- [All IMU acc + gyr]                    [Sparse IMU acc + gyr]            Teacher (frozen)
-        +                                       │                                │
- [EMG] or [Joint centers]                       ▼                                ▼  features + outputs
-        │                                Kinetics-MFFM-Net(S)           ┌─────────────────┐
-        ▼                                       │                       │  L_student      │
- Kinetics-MFFM-Net(T)                           ▼                       │  + α · L_SD1    │ ← outputs
-        │                                  [7 or 5 targets]             │  + β · L_SD2    │ ← features
-        ▼                                                               └─────────────────┘
- [7 or 5 targets]                                                                │
-                                                                                 ▼
-                                                                       Student matches teacher
-                                                                       even with sparse IMUs
-```
+Based on the manuscript and project descriptions, the work explores four broad directions:
 
-Both teacher and student share the **same backbone** (GDEN + MFFM + FCM); they differ only in the number of input modalities. The teacher is trained alone, frozen, then used to supervise the student.
+1. Deep learning models that estimate gait biomechanics from shoe-mounted or reduced IMU setups.
+2. Lightweight architectures that preserve accuracy while improving computational efficiency.
+3. Sensor distillation, where a richer teacher model transfers knowledge to a sparse-sensor student model.
+4. Knowledge transfer / adaptation strategies to improve generalization across datasets and settings.
 
----
+This specific repository appears to align most closely with the third direction:
 
-## 🏗️ Architecture Deep-Dive
+- **sparse IMU-based kinetics estimation**
+- **multi-modal fusion**
+- **sensor distillation**
 
-### High-level pipeline
+## Target Outputs
 
-```
-Per-modality input
-   │
-   ▼
-[BatchNorm] ──→ [GDEN: Bi-LSTM + Bi-GRU + Gating] ──→ modality features  (one per modality)
-                                                            │
-                                                            ▼ concat across modalities
-                                                       [MFFM]
-                                                            │
-                                                            ▼
-                                                       [FCM: Linear] ──→ kinetics targets
-```
+The overall project targets biomechanical variables such as:
 
-### 1️⃣ Gated Dual-Encoder Network (GDEN)
+- lower-extremity joint angles
+- lower-extremity joint moments
+- 3D ground reaction forces
 
-Each modality (acc, gyr, emg/video) has its **own** GDEN. Within a GDEN:
+Depending on the exact experimental branch, the predicted variables may include combinations of:
 
-```
-                    ┌──────────────► Bi-LSTM(2-layer) ──► X_lstm ─┐
-input (B, T, D)     │                                              ├─► gate ─► X_gated
-                    └──────────────► Bi-GRU (2-layer) ──► X_gru  ─┘
-```
+- hip, knee, and ankle kinematics
+- knee adduction moment (KAM)
+- knee flexion moment (KFM)
+- other sagittal or frontal plane joint moments
+- vertical and multi-axis GRF components
 
-**Why two encoders + a gate?** Bi-LSTM and Bi-GRU capture slightly different temporal dynamics. Rather than committing to one (which is dataset-dependent), the gate learns per-feature, per-timestep how to mix them:
+## Sensing Setup
 
-$$
-W_{\text{gate}} = \sigma\!\big(\text{FC}([X_{\text{lstm}}, X_{\text{gru}}])\big)
-$$
+The central idea is not to remove wearable sensing entirely, but to **reduce the number of required IMUs** enough to make the system practical.
 
-$$
-X_{\text{gated}} = W_{\text{gate}} \odot X_{\text{lstm}} + (1 - W_{\text{gate}}) \odot X_{\text{gru}}
-$$
+The project contrasts:
 
-The output of GDEN for each modality is a sequence of fused features, e.g. $X_{\text{acc, gated}}$, $X_{\text{gyr, gated}}$, $X_{\text{emg/vid, gated}}$.
+- **full or richer sensor configurations** used by a teacher model
+- **sparse IMU configurations** used by the student model
 
-### 2️⃣ Multi-Modal Feature Fusion Module (MFFM)
+Sparse configurations are intended to be:
 
-After per-modality encoding, features are concatenated:
+- easier to wear
+- faster to set up
+- less intrusive
+- closer to real deployment conditions
 
-$$
-X_{\text{concat}} = [X_{\text{acc, gated}};\ X_{\text{gyr, gated}};\ X_{\text{emg/vid, gated}}]
-$$
+## Model Philosophy
 
-The MFFM then routes $X_{\text{concat}}$ through **three parallel fusion branches**, then fuses those branches:
+The project emphasizes not just prediction accuracy, but also **deployment-aware modeling**. The model philosophy appears to rest on four principles:
 
-```
-                      ┌──► MWFS  (modality weighting & sum)  ─┐
-                      │                                       │
-X_concat ─────────────┼──► MWFF  (channel weighting)         ─┼──► concat ──► MMF gate ──► X_mmf
-                      │                                       │
-                      └──► MAF   (multi-head self-attention) ─┘
-```
+1. **Sparse sensing should remain viable.**
+   A practical system cannot depend on a full laboratory-equivalent wearable setup.
 
-**(i) Multi-modal Weighted Feature Summation (MWFS).** Each modality gets its own scalar weight, then weighted sum across modalities. This *reduces* dimensionality and asks the model "how important is each modality at each timestep?"
+2. **Teacher-student learning can recover lost information.**
+   A teacher with richer inputs can guide a student that only sees sparse IMUs.
 
-$$
-W_m = \sigma(\text{FC}(X_{m,\text{gated}})), \quad m \in \{\text{acc, gyr, emg/vid}\}
-$$
+3. **Multi-modal fusion is useful even when the deployed system is sparse.**
+   Richer modalities can help shape better internal representations during training.
 
-$$
-X_{\text{mwfs}} = \sum_{m} W_m \odot X_{m,\text{gated}}
-$$
+4. **Lightweight models matter.**
+   Accuracy alone is not enough if inference is too expensive for portable or real-time use.
 
-**(ii) Multi-modal Weighted Feature Fusion (MWFF).** Channel-wise gating on the concatenated features — emphasizes important channels:
+## Core Technical Idea: Sensor Distillation
 
-$$
-X_{\text{mwff}} = \sigma(\text{FC}(X_{\text{concat}})) \odot X_{\text{concat}}
-$$
+One of the most important ideas in the project is **sensor distillation**.
 
-**(iii) Multi-modal Attention Fusion (MAF).** Standard multi-head self-attention captures temporal and cross-modal long-range dependencies:
+In plain language:
 
-$$
-\text{Attention}(Q, K, V) = \text{softmax}\!\left(\frac{QK^\top}{\sqrt{d}}\right) V
-$$
+- a teacher model is trained with access to richer sensing information
+- a student model is trained with only sparse IMUs
+- the student learns not only from ground-truth biomechanical outputs, but also from the teacher’s guidance
 
-with $Q = X_{\text{concat}} W_Q$, $K = X_{\text{concat}} W_K$, $V = X_{\text{concat}} W_V$, multi-head with $h$ heads.
+This setup helps the student preserve information that would otherwise be lost when using a reduced sensor set.
 
-**(iv) Multi-modal Module Fusion (MMF).** Concatenate the three branches, then apply a final gate:
+Conceptually, sensor distillation provides a way to answer:
 
-$$
-X_{\text{concat,mmf}} = [X_{\text{mwfs}};\ X_{\text{mwff}};\ X_{\text{maf}}]
-$$
+**How can a sparse deployment model learn behaviors that normally require more sensors?**
 
-$$
-X_{\text{mmf}} = \sigma(\text{FC}(X_{\text{concat,mmf}})) \odot X_{\text{concat,mmf}}
-$$
+This is one of the strongest translational aspects of the work because it separates:
 
-### 3️⃣ Fully Connected Module (FCM)
+- what is available during training
+- what is available during deployment
 
-A simple linear projection to the target space:
+## Multi-Modal Fusion
 
-$$
-\hat{K} = \text{FC}(X_{\text{mmf}}) \in \mathbb{R}^{B \times \Delta T \times D_k}
-$$
+The project description also highlights **multi-modal fusion**, likely used in the teacher-side or richer training setup.
 
-where $D_k = 7$ for Dataset A and $D_k = 5$ for Dataset B.
+The role of multi-modal fusion here is to:
 
-### Why this design?
+- improve latent representations
+- combine complementary signal sources
+- capture biomechanical patterns that may not be fully observable from sparse IMUs alone
 
-| Component | What it solves |
-|---|---|
-| **Per-modality GDEN** | Different sensor modalities have different statistics — encoding them separately preserves modality-specific information before fusion. |
-| **Bi-LSTM + Bi-GRU + gate** | Robustness to dataset/modality variation — neither RNN type dominates everywhere. |
-| **MWFS** | Forces the model to reason about **modality importance** at each timestep. |
-| **MWFF** | Reweights individual feature channels — fine-grained importance. |
-| **MAF** | Captures long-range **temporal and cross-modal** dependencies. |
-| **MMF** | Lets the network choose which fusion strategy to rely on per timestep. |
+Even if the final deployed student only uses sparse IMUs, fusion during training can still be valuable by producing a stronger supervisory signal.
 
----
+## Lightweight Design
 
-## 🎓 Sensor Distillation (SD)
+Another notable contribution is the emphasis on model efficiency.
 
-### The intuition
+The project description mentions lightweight architectures that are intended to:
 
-The teacher sees more than the student does: full IMUs + EMG (Dataset A) or + joint centers (Dataset B). When the teacher predicts kinetics, its **internal 128-dim feature representation** carries information from those extra modalities. If we force the student to produce a similar representation — even though the student sees only sparse IMUs — the student is implicitly learning to "hallucinate" what EMG or video would have told it.
+- remain accurate
+- reduce computational burden
+- support real-time or near-real-time operation
 
-### The loss
+This matters because many prior deep learning systems for biomechanics are accurate but difficult to deploy due to:
 
-The student is trained with **three loss terms**:
+- large parameter counts
+- heavy sequence models
+- slow inference
+- dependence on laboratory preprocessing pipelines
 
-$$
-\mathcal{L}_{\text{total}} = \mathcal{L}_{\text{student}} + \alpha \cdot \mathcal{L}_{\text{SD1}} + \beta \cdot \mathcal{L}_{\text{SD2}}
-$$
+## Practical Significance
 
-| Term | Compares | Meaning |
-|---|---|---|
-| $\mathcal{L}_{\text{student}}$ | student output vs. ground truth | standard task RMSE |
-| $\mathcal{L}_{\text{SD1}}$ | student output vs. teacher output | **output-level distillation** (KD) |
-| $\mathcal{L}_{\text{SD2}}$ | student linearly-projected features vs. teacher's | **feature-level distillation** (sensor distillation) |
+If successful, this line of work can support:
 
-All three are RMSE losses. In our experiments: **α = 0.50, β = 1.00**.
+- at-home gait monitoring
+- remote rehabilitation tracking
+- longitudinal mobility assessment
+- sports and performance monitoring
+- lower-cost biomechanics estimation in settings without force plates or motion capture
 
-Formally, for a batch of size $B$ and window $\Delta T$:
+The project’s importance is not only methodological. It also addresses a real access problem in biomechanics: how to move from lab-only measurement to practical, wearable, scalable systems.
 
-$$
-\mathcal{L}_{\text{student}} = \sqrt{\frac{1}{B \Delta T} \sum_{b,k} \big(K_{\text{gt}}^{b,k} - K_{\text{est}}^{\text{student},\,b,k}\big)^2}
-$$
+## Likely Experimental Structure
 
-$$
-\mathcal{L}_{\text{SD1}} = \sqrt{\frac{1}{B \Delta T} \sum_{b,k} \big(K_{\text{est}}^{\text{student},\,b,k} - K_{\text{est}}^{\text{teacher},\,b,k}\big)^2}
-$$
+From the manuscript summary and public project descriptions, the study likely compares:
 
-$$
-\mathcal{L}_{\text{SD2}} = \sqrt{\frac{1}{B \Delta T} \sum_{b,k} \big(X_{\text{concat,lin}}^{\text{student},\,b,k} - X_{\text{concat,lin}}^{\text{teacher},\,b,k}\big)^2}
-$$
+- sparse IMU models vs. richer-sensor models
+- student models vs. teacher-guided student models
+- proposed lightweight models vs. prior deep learning baselines
+- multiple locomotion modes rather than only steady treadmill walking
 
-A linear projection (`fc_kd` in the code) maps the student's pre-fusion features to the **same 128-dim space** as the teacher's, so $\mathcal{L}_{\text{SD2}}$ can be computed.
+Likely evaluation dimensions include:
 
-### Training loop
+- estimation accuracy
+- cross-mode robustness
+- statistical significance vs. baselines
+- computational efficiency
 
-```python
-teacher.eval()  # frozen after Phase 1
+## Key Contributions
 
-for epoch in range(num_epochs):
-    for batch in train_loader:
-        # Student forward (sparse IMUs)
-        K_student, X_student_feat = student(acc_sparse, gyr_sparse)
+Based on the available manuscript and project descriptions, the main contributions can be summarized as follows:
 
-        # Teacher forward (full sensor set), no grad
-        with torch.no_grad():
-            K_teacher, X_teacher_feat = teacher(acc_full, gyr_full, emg_or_video)
+1. A sparse-IMU framework for estimating gait biomechanics under practical sensing constraints.
+2. A lightweight deep learning model suitable for real-time or near-real-time use.
+3. A sensor distillation strategy that transfers knowledge from richer sensing setups to sparse IMU deployment models.
+4. A multi-modal fusion design that improves representation quality during training.
+5. Validation across multiple locomotion conditions rather than a single narrow walking scenario.
 
-        loss = RMSE(K_student, target) \
-             + alpha * RMSE(K_student, K_teacher) \
-             + beta  * RMSE(X_student_feat, X_teacher_feat)
+## Why This Project Matters
 
-        loss.backward(); optimizer.step()
-```
+This project sits at an important intersection of:
 
-### Why this beats naive student training
+- wearable sensing
+- biomechanics
+- deep learning
+- translational healthcare engineering
 
-In the paper's ablations, swapping a 3-IMU naive student for a 2-IMU SD student gives **the same accuracy with one less sensor** — the distilled feature space compensates for the missing input. This is the headline result.
+Many gait-estimation systems fail when moving from the lab to everyday use because they require:
 
----
+- too many sensors
+- too much calibration
+- too much infrastructure
+- too much expert supervision
 
-## 📁 Repository Structure
+This work directly targets that translational bottleneck by asking not just how to make predictions, but how to make them **practical**.
 
-```
+## Relationship to Prior Work
+
+This repository appears to build naturally on earlier work in the same research line, including:
+
+- shoe-mounted IMU estimation of joint moments
+- reduced-sensor estimation of lower-extremity joint angles
+- deep wearable motion capture
+- sparse-sensor modeling with stronger fusion and distillation strategies
+
+In that sense, it looks like a unifying and more deployment-oriented step forward rather than an isolated model.
+
+## Recommended Repository Framing
+
+Since the public GitHub repository is currently marked as under construction, the best public-facing framing would be:
+
+### Suggested One-Sentence Description
+
+Deep learning framework for estimating lower-extremity gait kinematics, joint moments, and ground reaction forces from sparse IMU sensors using multi-modal fusion and sensor distillation.
+
+### Suggested Short Abstract for GitHub
+
+This repository accompanies our work on sparse IMU-based gait biomechanics estimation. We study how reduced wearable sensor configurations can be used to estimate joint kinematics, joint moments, and 3D ground reaction forces across multiple locomotion modes. Our approach combines lightweight deep learning, multi-modal fusion, and teacher-student sensor distillation to improve the performance of sparse IMU systems while preserving practical deployability.
+
+## Recommended Sections for the Final GitHub README
+
+If you want to turn this into a full public `README.md`, I would recommend the following structure:
+
+1. Title
+2. Project overview
+3. Why sparse IMUs
+4. Manuscript / citation
+5. Dataset summary
+6. Sensor setup
+7. Model architecture
+8. Teacher-student distillation pipeline
+9. Training details
+10. Evaluation metrics
+11. Results
+12. Repository structure
+13. Installation
+14. Usage
+15. Reproducibility notes
+16. License
+17. Contact
+
+## Recommended Repository Structure
+
+A clean public version of the repository could eventually look like this:
+
+```text
 Sparse-IMU-Sensor-based-kinetics-estimation/
-│
-├── Dataset_A_ffn_hf_ffn_bilstm_convnet.py       # External baselines: FFN(HF), FFN, Bi-LSTM, 2D Conv
-├── Dataset_B_ffn_hf_ffn_bilstm_convnet.py
-│
-├── Dataset_A_lmfn_tfn_fusion_models.py          # External baselines: LMFN, TFN
-├── Dataset_B_lmfn_tfn_fusion_models.py
-│
-├── Dataset_A_kinetics_fm_models.py              # External baselines: Kinetics-FM-DLR-Net, DL-Kinetics-FM-Net
-├── Dataset_B_kinetics_fm_models.py
-│
-├── Dataset_A_Sensor_Distillation.py             # ⭐ MAIN: Teacher + Student + SD (this paper)
-├── Dataset_B_sensor_distillation.py
-│
-├── Dataset_A_model_ablation.py                  # Internal baselines: Early Fusion, Feature Concat, MFFM-only
-└── Dataset_B_model_ablation.py
+├── README.md
+├── LICENSE
+├── requirements.txt
+├── environment.yml
+├── configs/
+├── data/
+│   ├── README.md
+│   └── preprocessing/
+├── models/
+├── training/
+├── evaluation/
+├── utils/
+├── notebooks/
+├── figures/
+├── checkpoints/
+└── docs/
 ```
 
-### What each file does
+## Reproducibility Checklist
 
-| File group | Models implemented | Purpose |
-|---|---|---|
-| `*_ffn_hf_ffn_bilstm_convnet.py` | FFN (HF), FFN, Bi-LSTM, 2D Conv. Network | Generic deep-learning baselines from prior work [31, 34, 36, 38, 39]. |
-| `*_lmfn_tfn_fusion_models.py` | LMFN, TFN | Multimodal fusion baselines [35]. |
-| `*_kinetics_fm_models.py` | Kinetics-FM-DLR-Net, DL-Kinetics-FM-Net | Heavy IMU-specific baselines [40, 41]. |
-| `*_Sensor_Distillation.py` | **Kinetics-MFFM-Net (T)**, **Kinetics-MFFM-Net (S)**, **+ SD** | Main contribution: trains teacher, then 4 students at increasing sensor counts, with and without distillation. |
-| `*_model_ablation.py` | Early Fusion (Bi-LSTM/GRU), Feature Concat (Bi-LSTM/GRU), MFFM (Bi-LSTM/GRU) | Internal ablations to justify each architectural component. |
+For long-term usefulness, the final repository should ideally document:
 
-### Inside `Dataset_A_Sensor_Distillation.py`
+- exact sensor placements
+- sampling rates
+- window lengths and overlap
+- preprocessing steps
+- target normalization
+- train/validation/test split strategy
+- cross-subject vs. within-subject evaluation
+- locomotion modes included
+- model hyperparameters
+- teacher and student training objectives
+- loss definitions
+- evaluation metrics
+- baseline implementations
+- statistical testing procedure
 
-The script trains and evaluates the full pipeline for **one LOSO test subject**. For each student configuration, it produces 9 ablation rows: the teacher, four naive students (1, 2, 3, 4 IMUs), four SD students (1, 2, 3, 4 IMUs).
+## Current Limitation of This Documentation
 
-Key classes (all defined inline — Colab-style single-cell code):
+This markdown is grounded in:
 
-| Class | Role |
-|---|---|
-| `Encoder_1` | 2-layer Bi-LSTM with dropout |
-| `Encoder_2` | 2-layer Bi-GRU with dropout |
-| `GatingModule` | Sigmoid-gated fusion of two encoder outputs |
-| `teacher` | Full Kinetics-MFFM-Net(T) with 3 modalities (acc, gyr, EMG) |
-| `student_1`…`student_4` | Naive sparse-IMU students (no SD), 1 → 4 IMUs |
-| `student_1_KD`…`student_4_KD` | SD-trained students (return both prediction and `x_KD` features) |
+- the manuscript file path you provided
+- your public GitHub repository link
+- your public project and publication summaries
 
-Sensor configurations for Dataset A students:
+However, the linked GitHub repository currently appears to be **under construction**, so this document is intentionally framed as a **manuscript-aligned comprehensive overview**, not a line-by-line code walkthrough of the repository contents.
 
-| Student | Channels | Sensors |
-|---|---|---|
-| 1 | acc[0:3], gyr[0:3] | Foot |
-| 2 | acc[0:3]+[9:12], gyr[0:3]+[9:12] | Foot + Torso |
-| 3 | acc[0:6]+[9:12], gyr[0:6]+[9:12] | Foot + Shank + Torso |
-| 4 | acc[0:9]+[9:12], gyr[0:9]+[9:12] | Foot + Shank + Thigh + Torso |
+## Suggested Citation Block
 
-Output: a CSV per LOSO subject with NRMSE and PCC for all 9 ablations × 7 targets.
-
----
-
-## 🚀 Reproduction Guide
-
-### Environment
-
-```bash
-# Tested with these exact versions
-python==3.8+
-numpy==1.20.3
-pandas==1.3.4
-matplotlib==3.4.3
-scikit-learn==0.24.2
-scipy==1.7.1
-seaborn==0.11.2
-torch==1.13.1+cu117
-torchvision==0.14.1+cu117
-torchaudio==0.13.1+cu117
-h5py==3.3.0
-tqdm==4.62.3
-```
-
-Hardware used in the paper:
-- **Training:** NVIDIA TITAN XP
-- **Inference benchmarking:** NVIDIA T4
-
-### Data preparation
-
-1. Download Dataset A from [Camargo et al. 2021](https://doi.org/10.1016/j.jbiomech.2021.110320) and Dataset B from [Tan et al. 2022](https://doi.org/10.1109/TII.2022.3225507).
-2. Pre-process (band-pass + rectify + low-pass for EMG; resample GRFs; segment per gait cycle).
-3. Store as a single HDF5 with one group per subject — the loader in the script expects:
-   ```
-   /All_subjects/Subject_<id>/Treadmill, /Levelground, /Ramp, /Stair
-   ```
-   where each leaf is an `(N_samples, 129)` float array (column layout below).
-
-**Column layout (Dataset A, 129 cols):**
-
-| Index range | Content |
-|---|---|
-| `0:24` | 4 IMUs × (acc xyz + gyr xyz) |
-| `24:47` | Joint kinematics (23 channels) |
-| `47:70` | Joint kinetics (full) |
-| `70:79` | 9-channel GRF block (we use first 3) |
-| `79:84` | Goniometer (5 channels) |
-| `84:106` | EMG (22 channels — we use 11) |
-| `106:129` | Joint power (23 channels) |
-
-The script extracts: 24 IMU + 12 kinematics + 11 EMG + 7 JP + 5 goniometer + 4 kinetics + 3 GRF = **66 input cols**, with cols 59–66 reserved for the **7 prediction targets**.
-
-### Training pipeline (one LOSO subject, e.g. Subject_30)
-
-```bash
-# Phase 1: Train teacher
-python Dataset_A_Sensor_Distillation.py
-# This single script:
-#   - loads all 20 subjects, holds out Subject_30 as test
-#   - trains the teacher (full IMU + EMG)
-#   - trains 4 naive students (1, 2, 3, 4 IMUs) — no SD
-#   - trains 4 SD students (1, 2, 3, 4 IMUs) using frozen teacher
-#   - evaluates each on the LOSO subject
-#   - saves: <subject>_<encoder>_KD_SD_results.csv
-```
-
-### Hyperparameters (held constant for fair comparison)
-
-| Hyperparameter | Value |
-|---|---|
-| Batch size | 64 |
-| Optimizer | Adam |
-| Learning rate | 1e-3 |
-| Loss | RMSE |
-| Epochs (max) | 40 |
-| Early stopping patience | 10 |
-| Validation split | 20% |
-| Random seed | 42 |
-| Window size | 100 (Dataset A), 50 (Dataset B) |
-| Distillation weights | α = 0.50, β = 1.00 |
-
-### Evaluation metrics
-
-- **NRMSE (%)** = RMSE normalized by the range of the ground truth, expressed as a percentage. Per-target.
-- **PCC** = Pearson correlation coefficient between prediction and ground truth. Per-target.
-- Both reported as **mean ± std across LOSO subjects**.
-- Statistical tests: repeated-measures ANOVA + Bonferroni post-hoc (across models); paired *t*-test (Kinetics-MFFM-Net(S) vs. +SD), with significance at *p* < 0.05.
-
-### Sanity-check before running
-
-- HDF5 path in the script: `/home/sanzidpr/Dataset A-Kinetics/All_subjects_data.h5` — **edit this** to match your environment.
-- Output path: `/home/sanzidpr/Journal_3/Dataset_A_model_results/Subject<N>/` — **edit this**.
-- The script trains for one held-out subject at a time. To get full LOSO results, loop over all 20 subjects (e.g., wrap in a shell script that swaps the test subject ID).
-
----
-
-## 📈 Results Summary
-
-### Internal ablations (Table I of the paper)
-
-Progressive component additions, both datasets, all modalities:
-
-| Configuration | Dataset A NRMSE (%) | Dataset B NRMSE (%) |
-|---|---|---|
-| Early Fusion (Bi-LSTM) | 4.63 ± 0.75 | 4.12 ± 0.47 |
-| Early Fusion (Bi-GRU) | 4.65 ± 0.83 | 4.07 ± 0.45 |
-| Feature Concat (Bi-LSTM) | 4.80 ± 0.82 | 3.95 ± 0.42 |
-| Feature Concat (Bi-GRU) | 4.72 ± 0.70 | 4.00 ± 0.45 |
-| MFFM (Bi-LSTM) | 4.25 ± 0.71 | 3.67 ± 0.41 |
-| MFFM (Bi-GRU) | 4.19 ± 0.76 | 3.68 ± 0.48 |
-| **Kinetics-MFFM-Net (T)** | **4.16 ± 0.77** | **3.61 ± 0.47** |
-
-**Takeaway:** MFFM gives the biggest jump; GDEN adds small but consistent gains. All variants stay under 3.5M parameters and ~6 ms inference.
-
-### SOTA comparison with all modalities (Table II)
-
-| Model | Dataset A NRMSE | Dataset B NRMSE | Params (M) |
-|---|---|---|---|
-| FFN (HF) | 6.04 | 5.43 | 0.5–0.9 |
-| FFN | 5.56 | 4.32 | 1.8–9.1 |
-| Bi-LSTM | 4.93 | 4.21 | 5.2–19.8 |
-| LMFN | 4.89 | 4.55 | 0.1–0.2 |
-| TFN | 4.69 | 4.05 | 4.7–4.8 |
-| **Kinetics-MFFM-Net (T)** | **4.16** | **3.61** | **3.3–3.5** |
-
-**Takeaway:** Up to **31% lower NRMSE** than Bi-LSTM and FFN baselines; statistically significant (*p* < 0.05) against all but TFN, where the margin is still ≥10%.
-
-### SOTA comparison with sparse IMUs (Tables III–IV)
-
-| IMU config | Best baseline (NRMSE / Params) | Kinetics-MFFM-Net(S)+SD (NRMSE / Params) | Speedup |
-|---|---|---|---|
-| Dataset A — 2 IMUs (Foot+Torso) | DL-Kinetics-FM-Net: 5.06 / 254M | **4.91** / **1.86M** | ~9× faster |
-| Dataset A — 4 IMUs | Kinetics-FM-DLR-Net: 4.91 / 254M | **4.75** / **1.90M** | ~9× faster |
-| Dataset B — 3 IMUs (Feet+Pelvis) | DL-Kinetics-FM-Net: 4.40 / 77M | **4.38** / **1.90M** | ~8× faster |
-| Dataset B — 8 IMUs | DL-Kinetics-FM-Net: 3.95 / 78M | **3.90** / **1.95M** | ~8× faster |
-
-**The big punchlines:**
-1. **Sensor compensation:** Naive 3-IMU student → NRMSE 4.98. SD 2-IMU student → NRMSE 4.91. **One fewer IMU, same accuracy.**
-2. **Parameter efficiency:** Up to **130×** fewer params than DL-Kinetics-FM-Net for matching or better accuracy (Dataset A).
-3. **Real-time ready:** Inference under **4.25 ms/sample** on T4 GPU, well below the 0.5 s window — leaves headroom for embedded deployment.
-
----
-
-## ⚠️ Limitations & Future Work
-
-**Acknowledged in the paper:**
-
-1. **Activity scope** — datasets focus on walking; running, jumping, and transitions need testing.
-2. **Demographics** — both datasets are young adults; clinical populations (elderly, post-stroke, amputees) need separate validation.
-3. **Sensor diversity** — pressure insoles or other modalities could further improve GRF estimation.
-4. **Real-time validation** — inference latency is benchmarked, but full embedded deployment with wireless IMUs is future work.
-5. **Privacy** — federated learning could enable cross-clinic adaptation without sharing raw data.
-
-**Implicit but worth noting:**
-
-- The teacher's 128-dim bottleneck size is fixed; ablating bottleneck dimensionality could further compress.
-- Distillation weights (α=0.5, β=1.0) were chosen empirically; learnable or scheduled weights could help.
-- The current student receives the same window length as the teacher — for prosthetic control, *forecasting* (predicting 100–200 ms ahead) is the natural extension.
-
----
-
-## 📎 Citation
+You may want to add a temporary citation section like this to the repo:
 
 ```bibtex
-@article{hossain2024kineticsmffm,
-  title   = {Lightweight and Efficient Kinetics Estimation with Sparse IMUs via Multi-Modal Sensor Distillation},
-  author  = {Hossain, Md Sanzid Bin and Hadley, Dexter and Guo, Zhishan and Choi, Hwan},
-  journal = {IEEE Sensors Journal},
-  year    = {2024}
+@misc{hossain_sparse_imu_kinetics,
+  author       = {Md Sanzid Bin Hossain and collaborators},
+  title        = {Sparse IMU-Based Kinetics Estimation Using Multi-modal Fusion and Sensor Distillation},
+  year         = {2024},
+  note         = {Manuscript and repository under active development},
+  howpublished = {\url{https://github.com/Md-Sanzid-Bin-Hossain/Sparse-IMU-Sensor-based-kinetics-estimation}}
 }
 ```
 
-**Funded by:** NSF Grants FRR-2246671 and FRR-2246672.
+Replace this with the final article metadata once the paper is formally published or publicly released in its final venue-specific form.
 
----
+## Source Notes
 
-## 🙋 Questions
+This summary was prepared using the following anchors:
 
-For questions about the code or extensions, contact the corresponding author or open a GitHub issue. The most likely things to need adapting for a new dataset are:
+- the manuscript path you provided: [Final_manuscript.pdf](/Users/sanzid-research/Downloads/Final_manuscript.pdf)
+- your GitHub repository: [Sparse-IMU-Sensor-based-kinetics-estimation](https://github.com/Md-Sanzid-Bin-Hossain/Sparse-IMU-Sensor-based-kinetics-estimation/tree/main)
+- your public project page: [Projects](https://www.mdsanzidbinhossain.com/projects/)
+- your public CV / publications pages for context on related work and project framing
 
-1. **Channel layout** (the `0:24`, `24:47`, etc. column slices in the data loader).
-2. **Sensor masks** for sparse student configurations (the `data_acc[:,:,0:3]` etc. slicing in each `train_mm_student_*` function).
-3. **Number of targets** — change `output_dim`, the final FC out-features (`nn.Linear(..., 7)`), and `m1`/`m2` in the data slicing.
+## Bottom Line
+
+This project is best understood as a **practical biomechanics estimation framework** that tries to preserve the strengths of deep learning while removing one of the biggest deployment barriers in gait analysis: the need for dense, expensive, and cumbersome sensing setups.
+
+Its strongest message is not simply that sparse IMUs can work, but that they can work **better** when combined with:
+
+- efficient modeling
+- richer teacher supervision
+- multi-modal representation learning
+- deployment-aware design choices
