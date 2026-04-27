@@ -49,7 +49,8 @@ Wearable alternatives have their own problems:
 Two publicly available gait datasets, deliberately different in their non-IMU modality, to test generalization.
 
 ### Dataset A — Camargo et al. (2021)
-- **Source:** [*A comprehensive, open-source dataset of lower limb biomechanics in multiple conditions...*, Journal of Biomechanics, 119:110320](https://doi.org/10.1016/j.jbiomech.2021.110320)
+- **Paper:** [*A comprehensive, open-source dataset of lower limb biomechanics in multiple conditions of stairs, ramps, and level-ground ambulation and transitions*, Journal of Biomechanics, 119: 110320](https://doi.org/10.1016/j.jbiomech.2021.110320)
+- **Dataset download:** [EPIC Lab page](https://www.epic.gatech.edu/opensource-biomechanics-camargo-et-al/) or [Mendeley Data (3 parts)](https://data.mendeley.com/datasets/fcgm3chfff/1)
 - 20 participants (12 M, 8 F).
 - 4 IMUs (thigh, shank, foot, torso) + 11 EMGs + force plates + motion capture.
 - Locomotion: treadmill, level-ground, ramps (6 inclinations), stairs (4 heights).
@@ -57,7 +58,8 @@ Two publicly available gait datasets, deliberately different in their non-IMU mo
 - Window ΔT = 100 samples (0.5 s @ 200 Hz).
 
 ### Dataset B — Tan et al. (2022)
-- **Source:** [*IMU and Smartphone Camera Fusion for Knee Adduction and Knee Flexion Moment Estimation During Walking*, IEEE Transactions on Industrial Informatics](https://doi.org/10.1109/TII.2022.3225507)
+- **Paper:** [*IMU and Smartphone Camera Fusion for Knee Adduction and Knee Flexion Moment Estimation During Walking*, IEEE Transactions on Industrial Informatics, 19(2): 1445–1455](https://doi.org/10.1109/TII.2022.3189648)
+- **Dataset download:** [SimTK project page](https://simtk.org/projects/imukinetics)
 - 17 participants (all male).
 - 8 IMUs (trunk, pelvis, both thighs/shanks/feet) + 2 smartphone cameras → 2D joint centers via OpenPose.
 - Locomotion: instrumented treadmill walking under varied speeds, foot progression angles, step widths, and trunk sway angles.
